@@ -16,6 +16,7 @@ using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.VSSDK.Tools.VsIdeTesting;
 using Microsoft.VisualStudio;
+using VisualStudioIntegrationTestsBDDfySample.Integration_Tests;
 
 namespace Microsoft.VsSDK.IntegrationTestLibrary
 {

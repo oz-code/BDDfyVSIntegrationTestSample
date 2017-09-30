@@ -7,6 +7,12 @@ using Microsoft.VsSDK.IntegrationTestLibrary;
 using Microsoft.VSSDK.Tools.VsIdeTesting;
 using Shouldly;
 using TestStack.BDDfy;
+using System.Threading.Tasks;
+using System.Threading;
+using Nito.AsyncEx;
+using System.IO;
+using VisualStudioIntegrationTestsBDDfySample.Integration_Tests;
+using VisualStudioIntegrationTestsBDDfySample;
 
 namespace IntegrationTests.BDDfy
 {
@@ -21,13 +27,14 @@ namespace IntegrationTests.BDDfy
             _dte = (DTE)VsIdeTestHostContext.ServiceProvider.GetService(typeof(DTE));
         }
 
+
         [TestCleanup]
         public void Teardown()
         {
-            _dte.ExecuteCommand("Debug.StopDebugging");
+            
         }
 
-        public void GivenTheProgram(string program)
+        public void Given_the_program(string program)
         {
             CreateConsoleApplication(program);            
         }
@@ -49,7 +56,12 @@ class TestClass
         }
 
         private void ReplaceCodeInCurrentFileWith(string program)
-        {            
+        {
+            if (_dte == null) throw new ArgumentNullException("dte");
+            if (_dte.Solution == null) throw new ArgumentNullException("solution");
+
+            _dte.Solution.Open(Consts.TestConsoleApp);
+
             var doc = (TextDocument)_dte.ActiveDocument.Object();
             EditPoint editPoint = doc.StartPoint.CreateEditPoint();
             EditPoint endPoint = doc.EndPoint.CreateEditPoint();
@@ -62,17 +74,31 @@ class TestClass
             TestUtils testUtils = new TestUtils();
             testUtils.CloseCurrentSolution(__VSSLNSAVEOPTIONS.SLNSAVEOPT_NoSave);
             testUtils.CreateEmptySolution(@"C:\Tests", "EmptySolution");
-            testUtils.CreateProjectFromTemplate("OzCode Tests", "ConsoleApplication.zip", "CSharp", false);                        
+            //testUtils.CreateProjectFromTemplate("OzCode Tests", "ConsoleApplication.zip", "CSharp", false);
+            BDDfyConfiguration.Write("before replace");
             ReplaceCodeInCurrentFileWith(program);
         }
-
-        protected void AndWeRunTheProgram()
+        protected void We_run_the_program()
         {
             _dte.Debugger.Go(WaitForBreakOrEnd: true);
-        }        
-        protected void ThenWeBreakOnLine(int lineNumber)
+        }
+
+        protected void We_execute_command(string commandName)
         {
-            var stackFrame = (StackFrame2)_dte.Debugger.CurrentStackFrame;
+            _dte.ExecuteCommand(commandName);
+        }
+
+        protected void We_hit_F5_again()
+        {
+            _dte.Debugger.Go(WaitForBreakOrEnd: true);
+        }
+        protected void Then_we_break_on_line(int lineNumber)
+        {
+            var debugger = _dte.Debugger;
+            if (debugger == null) throw new InvalidOperationException("no debugger at this time");
+            
+            var stackFrame = (StackFrame2)debugger.CurrentStackFrame;
+            if (stackFrame == null) throw new InvalidOperationException("no stackframe at this time");
 
             int debuggerLineNumber = ToFakeLineNumber((int)stackFrame.LineNumber);
 
